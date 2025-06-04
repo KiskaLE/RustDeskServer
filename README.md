@@ -1,2 +1,0 @@
-# RustDeskServer
-Read me
