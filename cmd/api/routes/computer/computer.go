@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KiskaLE/RustDeskServer/cmd/db"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/db"
 	"github.com/KiskaLE/RustDeskServer/utils"
 	"gorm.io/gorm"
 )

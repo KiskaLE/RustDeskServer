@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"github.com/KiskaLE/RustDeskServer/cmd/middleware"
-	"github.com/KiskaLE/RustDeskServer/cmd/routes/computer"
-	"github.com/KiskaLE/RustDeskServer/cmd/routes/test"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/middleware"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/computer"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/test"
 	"github.com/gorilla/mux"
 )
 

@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/KiskaLE/RustDeskServer/cmd/api/db"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
-	"github.com/KiskaLE/RustDeskServer/cmd/db"
 	"github.com/KiskaLE/RustDeskServer/utils"
 	"github.com/gorilla/mux"
 )
