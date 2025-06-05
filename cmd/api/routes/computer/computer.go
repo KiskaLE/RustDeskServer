@@ -24,7 +24,7 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 
 	// Check if computer exist
 	computer := &db.Computers{}
-	err = conn.First(&computer, "name = ?", strings.ToLower(payload.ComputerName)).Error
+	err = conn.First(&computer, "rust_desk_id = ?", payload.RustDeskID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// Create computer
 		newComputer := &db.Computers{
@@ -40,6 +40,9 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusInternalServerError, err)
 			return
 		}
+
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Computer created"})
+		return
 	}
 
 	// Update data about computer
