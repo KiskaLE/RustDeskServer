@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    container_name: RustDeskServer
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    volumes:
+      - ./db:/app/db
+    ports:
+      - "8080:8080"
