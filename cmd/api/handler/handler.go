@@ -19,6 +19,7 @@ func privateHandler(path string, handler http.HandlerFunc, mux *mux.Router) {
 
 func InitHandlers(mux *mux.Router) {
 	publicHandler("/api/v1/test", test.HelloRoute, mux)
+	publicHandler("/api/v1/computer/{computerName}/get-rustdesk-id", computer.GetComputerRustDeskIDRoute, mux)
 
 	privateHandler("/api/v1/computer/refresh", computer.RefreshComputerRoute, mux)
 }
