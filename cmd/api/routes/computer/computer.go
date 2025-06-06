@@ -47,13 +47,14 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update data about computer
-	computer.RustDeskID = payload.RustDeskID
-	computer.IP = payload.IP
-	computer.OS = payload.OS
-	computer.OSVersion = payload.OSVersion
-	computer.LastConnection = sql.NullTime{Time: time.Now(), Valid: true}
+	err = conn.Model(&computer).Updates(db.Computers{
+		Name:           strings.ToLower(payload.ComputerName),
+		IP:             payload.IP,
+		OS:             payload.OS,
+		OSVersion:      payload.OSVersion,
+		LastConnection: sql.NullTime{Time: time.Now(), Valid: true},
+	}).Error
 
-	err = conn.Save(computer).Error
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
