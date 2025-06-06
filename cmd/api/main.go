@@ -41,9 +41,19 @@ func main() {
 		IdleTimeout:  5 * time.Second,
 	}
 
-	log.Println("Starting server on :" + port)
-	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal("Server startup failed")
+	isHttps := os.Getenv("HTTPS")
+
+	if isHttps == "true" {
+		log.Println("Starting https server on :" + port)
+		if err := s.ListenAndServeTLS("./certs/server.crt", "./certs/server.key"); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server startup failed")
+		}
+	} else {
+		log.Println("Starting http server on :" + port)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server startup failed")
+		}
 	}
+
 	s.ListenAndServe()
 }
