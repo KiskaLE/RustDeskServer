@@ -8,7 +8,6 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -38,7 +37,7 @@ func main() {
 		port = "8080"
 	}
 
-	mux := mux.NewRouter()
+	mux := http.NewServeMux()
 
 	ctx := handler.NewAPI(db)
 

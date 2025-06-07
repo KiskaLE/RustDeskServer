@@ -9,7 +9,6 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/utils"
-	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
@@ -71,7 +70,7 @@ func (cs *ComputerService) RefreshComputerRoute(w http.ResponseWriter, r *http.R
 }
 
 func (cs *ComputerService) GetComputerRustDeskIDRoute(w http.ResponseWriter, r *http.Request) {
-	computerName := mux.Vars(r)["computerName"]
+	computerName := r.PathValue("computerName")
 
 	computer := &database.Computers{}
 	err := cs.db.First(&computer, "name = ?", computerName).Error
