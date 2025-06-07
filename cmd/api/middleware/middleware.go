@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/KiskaLE/RustDeskServer/utils"
 )
 
 // AuthMiddleware checks if the user is authenticated
@@ -15,7 +18,7 @@ func ApiAuth(next http.Handler) http.Handler {
 		user_token := r.Header.Get("api_key")
 
 		if token != user_token {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 			return
 		}
 		next.ServeHTTP(w, r)

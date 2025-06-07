@@ -1,0 +1,4 @@
+certs/*
+README.MD
+*.env.example
+.gitignore
