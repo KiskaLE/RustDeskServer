@@ -8,8 +8,8 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/db"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
-	"github.com/KiskaLE/RustDeskServer/utils"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 // main initializes and starts the HTTP server. It loads environment variables,
@@ -19,7 +19,11 @@ import (
 
 func main() {
 
-	utils.LoadEnv()
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	// migrate database
 	db.MigrateDatabase()
@@ -42,7 +46,6 @@ func main() {
 	}
 
 	isHttps := os.Getenv("HTTPS")
-
 	if isHttps == "true" {
 		log.Println("Starting https server on :" + port)
 		if err := s.ListenAndServeTLS("./certs/server.crt", "./certs/server.key"); err != nil && err != http.ErrServerClosed {
@@ -54,6 +57,4 @@ func main() {
 			log.Fatal("Server startup failed")
 		}
 	}
-
-	s.ListenAndServe()
 }

@@ -3,10 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-
-	"github.com/joho/godotenv"
 )
 
 // ParseJSON reads the request body as JSON and decodes it into the provided value.
@@ -32,12 +29,4 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 // The function returns an error if the JSON encoding fails.
 func WriteError(w http.ResponseWriter, status int, err error) error {
 	return WriteJSON(w, status, map[string]string{"error": err.Error()})
-}
-
-func LoadEnv() {
-	// Load .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 }

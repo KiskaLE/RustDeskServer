@@ -3,8 +3,6 @@ package db
 import (
 	"database/sql"
 	"log"
-
-	"github.com/joho/godotenv"
 )
 
 func MigrateDatabase() {
@@ -19,10 +17,6 @@ func MigrateDatabase() {
 }
 
 func createDatabase() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 	println("Check if database exist")
 	db, err := sql.Open("sqlite3", "./db/database.db")
 	if err != nil {

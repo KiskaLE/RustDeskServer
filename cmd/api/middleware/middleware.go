@@ -5,18 +5,11 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 // AuthMiddleware checks if the user is authenticated
 func ApiAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Load .env file
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
 		// Check for a valid token (this is just an example, implement your own logic)
 		token := os.Getenv("AUTH_TOKEN")
 		user_token := r.Header.Get("api_key")
