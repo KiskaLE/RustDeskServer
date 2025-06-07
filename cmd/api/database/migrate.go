@@ -1,6 +1,8 @@
 package database
 
 import (
+	"log"
+
 	"gorm.io/gorm"
 )
 
@@ -8,8 +10,8 @@ func MigrateDatabase(db *gorm.DB) {
 	// create database if not exist
 	// createDatabase()
 	// Migrate the schema
-	println("Startin db migration")
+	log.Println("Startin db migration")
 	db.AutoMigrate(Computers{})
-	println("Migration done")
+	log.Println("Migration done")
 
 }
