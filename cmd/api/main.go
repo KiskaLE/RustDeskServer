@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -43,21 +44,42 @@ func main() {
 
 	ctx.InitHandlers(mux)
 
-	s := &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  2 * time.Second,
-		WriteTimeout: 2 * time.Second,
-		IdleTimeout:  5 * time.Second,
-	}
-
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {
+		certFilePath := os.Getenv("CERT_FILE_PATH")
+		keyFilePath := os.Getenv("KEY_FILE_PATH")
+
+		serverTLSCert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{serverTLSCert},
+		}
+
+		s := &http.Server{
+			Addr:         ":" + port,
+			Handler:      mux,
+			ReadTimeout:  2 * time.Second,
+			WriteTimeout: 2 * time.Second,
+			IdleTimeout:  5 * time.Second,
+			TLSConfig:    tlsConfig,
+		}
+
 		log.Println("Starting https server on :" + port)
-		if err := s.ListenAndServeTLS("./certs/server.crt", "./certs/server.key"); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Server startup failed")
 		}
 	} else {
+		s := &http.Server{
+			Addr:         ":" + port,
+			Handler:      mux,
+			ReadTimeout:  2 * time.Second,
+			WriteTimeout: 2 * time.Second,
+			IdleTimeout:  5 * time.Second,
+		}
+
 		log.Println("Starting http server on :" + port)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Server startup failed")
