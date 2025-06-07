@@ -7,19 +7,32 @@ import (
 	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/computer"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/test"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-func publicHandler(path string, handler http.HandlerFunc, mux *mux.Router) {
+type API struct {
+	db *gorm.DB
+}
+
+func NewAPI(db *gorm.DB) *API {
+	return &API{
+		db: db,
+	}
+}
+
+func (api *API) publicHandler(path string, handler http.HandlerFunc, mux *mux.Router) {
 	mux.Handle(path, middleware.Logging(http.HandlerFunc(handler))).Methods("GET", "POST")
 }
 
-func privateHandler(path string, handler http.HandlerFunc, mux *mux.Router) {
+func (api *API) privateHandler(path string, handler http.HandlerFunc, mux *mux.Router) {
 	mux.Handle(path, middleware.ApiAuth(middleware.Logging(http.HandlerFunc(handler)))).Methods("GET", "POST", "PUT", "DELETE")
 }
 
-func InitHandlers(mux *mux.Router) {
-	publicHandler("/api/v1/test", test.HelloRoute, mux)
-	publicHandler("/api/v1/computer/{computerName}/get-rustdesk-id", computer.GetComputerRustDeskIDRoute, mux)
+func (api *API) InitHandlers(mux *mux.Router) {
+	computerService := computer.NewComputerService(api.db)
 
-	privateHandler("/api/v1/computer/refresh", computer.RefreshComputerRoute, mux)
+	api.publicHandler("/api/v1/test", test.HelloRoute, mux)
+	api.publicHandler("/api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)
+
+	api.privateHandler("/api/v1/computer/refresh", computerService.RefreshComputerRoute, mux)
 }

@@ -7,13 +7,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KiskaLE/RustDeskServer/cmd/api/db"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/utils"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
-func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
+type ComputerService struct {
+	db *gorm.DB
+}
+
+func NewComputerService(db *gorm.DB) *ComputerService {
+	return &ComputerService{db: db}
+}
+
+func (cs *ComputerService) RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 	var payload RefreshComputerPayload
 	err := utils.ParseJSON(r, &payload)
 	if err != nil {
@@ -21,14 +29,12 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn := db.Connect()
-
 	// Check if computer exist
-	computer := &db.Computers{}
-	err = conn.First(&computer, "rust_desk_id = ?", payload.RustDeskID).Error
+	computer := &database.Computers{}
+	err = cs.db.First(&computer, "rust_desk_id = ?", payload.RustDeskID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// Create computer
-		newComputer := &db.Computers{
+		newComputer := &database.Computers{
 			Name:           strings.ToLower(payload.ComputerName),
 			RustDeskID:     payload.RustDeskID,
 			IP:             payload.IP,
@@ -36,7 +42,7 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 			OSVersion:      payload.OSVersion,
 			LastConnection: sql.NullTime{Time: time.Now(), Valid: true},
 		}
-		err = conn.Save(newComputer).Error
+		err = cs.db.Save(newComputer).Error
 		if err != nil {
 			utils.WriteError(w, http.StatusInternalServerError, err)
 			return
@@ -47,7 +53,7 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update data about computer
-	err = conn.Model(&computer).Updates(db.Computers{
+	err = cs.db.Model(&computer).Updates(database.Computers{
 		Name:           strings.ToLower(payload.ComputerName),
 		IP:             payload.IP,
 		OS:             payload.OS,
@@ -64,13 +70,11 @@ func RefreshComputerRoute(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func GetComputerRustDeskIDRoute(w http.ResponseWriter, r *http.Request) {
+func (cs *ComputerService) GetComputerRustDeskIDRoute(w http.ResponseWriter, r *http.Request) {
 	computerName := mux.Vars(r)["computerName"]
 
-	conn := db.Connect()
-
-	computer := &db.Computers{}
-	err := conn.First(&computer, "name = ?", computerName).Error
+	computer := &database.Computers{}
+	err := cs.db.First(&computer, "name = ?", computerName).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		utils.WriteError(w, http.StatusNotFound, err)
 		return

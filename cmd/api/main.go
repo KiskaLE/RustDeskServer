@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/KiskaLE/RustDeskServer/cmd/api/db"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -25,8 +25,13 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	db, err := database.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
 	// migrate database
-	db.MigrateDatabase()
+	database.MigrateDatabase(db)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -35,7 +40,9 @@ func main() {
 
 	mux := mux.NewRouter()
 
-	handler.InitHandlers(mux)
+	ctx := handler.NewAPI(db)
+
+	ctx.InitHandlers(mux)
 
 	s := &http.Server{
 		Addr:         ":" + port,
