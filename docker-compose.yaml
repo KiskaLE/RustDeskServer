@@ -7,5 +7,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./db:/app/db
+      - ./certs:/app/certs
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      - "${PORT:-3000}:3000"

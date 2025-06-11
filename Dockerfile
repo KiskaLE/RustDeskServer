@@ -12,7 +12,7 @@ RUN go mod tidy
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o ./bin/api ./cmd/api
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-X 'main.runningInDocker=true'" -o ./bin/api ./cmd/api
 
 # Stage 2: Final Image
 FROM alpine:latest
@@ -21,8 +21,6 @@ WORKDIR /app
 
 # Copy the built binary from the builder stage
 COPY --from=builder /app/bin/api .
-COPY --from=builder /app/db /app/db
-COPY --from=builder /app/.env .
 
 CMD ["/app/api"]
-EXPOSE ${PORT:-8080}
+EXPOSE 3000

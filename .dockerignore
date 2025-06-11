@@ -1,4 +1,6 @@
 certs/*
+db/*
 README.MD
 *.env.example
+*.env
 .gitignore

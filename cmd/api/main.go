@@ -17,12 +17,16 @@ import (
 // The server listens on the specified port, defaulting to 8080 if not set in
 // the environment. It logs server start and handles any startup errors.
 
+var runningInDocker string = "false"
+
 func main() {
 
-	// Load .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if runningInDocker == "false" {
+		// Load .env file
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	db, err := database.Connect()
@@ -33,10 +37,7 @@ func main() {
 	// migrate database
 	database.MigrateDatabase(db)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := "3000"
 
 	mux := http.NewServeMux()
 
