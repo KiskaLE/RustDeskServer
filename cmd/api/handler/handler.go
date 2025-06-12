@@ -43,9 +43,9 @@ func (api *API) InitHandlers(mux *http.ServeMux) {
 
 	api.publicHandler("GET /api/v1/test", test.HelloRoute, mux)
 	api.publicHandler("GET /api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)
-	api.publicHandler("POST /api/v1/user/login", userService.LoginRoute, mux)
+	api.publicHandler("POST /api/v1/account/login", userService.LoginRoute, mux)
 	if os.Getenv("ALLOW_REGISTER") == "true" {
-		api.publicHandler("POST /api/v1/user/register", userService.RegisterRoute, mux)
+		api.publicHandler("POST /api/v1/account/register", userService.RegisterRoute, mux)
 	}
 
 	api.privateHandler("POST /api/v1/computer/refresh", computerService.RefreshComputerRoute, mux)
