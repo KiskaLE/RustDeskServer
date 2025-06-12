@@ -1,4 +1,4 @@
-package user
+package account
 
 type LoginPayload struct {
 	Email    string `json:"Email"`

@@ -1,4 +1,4 @@
-package user
+package account
 
 import (
 	"errors"
@@ -12,16 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserService struct {
+type AccountService struct {
 	db     *gorm.DB
 	valkey api.GlideClientCommands
 }
 
-func NewUserService(db *gorm.DB, valkey api.GlideClientCommands) *UserService {
-	return &UserService{db: db, valkey: valkey}
+func NewAccountService(db *gorm.DB, valkey api.GlideClientCommands) *AccountService {
+	return &AccountService{db: db, valkey: valkey}
 }
 
-func (us *UserService) RegisterRoute(w http.ResponseWriter, r *http.Request) {
+func (us *AccountService) RegisterRoute(w http.ResponseWriter, r *http.Request) {
 	// TODO implement
 	var payload RegisterPayload
 	err := utils.ParseJSON(r, &payload)
@@ -31,7 +31,7 @@ func (us *UserService) RegisterRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// chceck if user does not exist
-	var user database.Users
+	var user database.Accounts
 	err = us.db.First(&user, "email = ?", payload.Email).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("User already exists"))
@@ -45,7 +45,7 @@ func (us *UserService) RegisterRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// create user
-	newUser := &database.Users{
+	newUser := &database.Accounts{
 		Email:    payload.Email,
 		Password: string(hashedPassword),
 	}
@@ -58,7 +58,7 @@ func (us *UserService) RegisterRoute(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User created"})
 }
 
-func (us *UserService) LoginRoute(w http.ResponseWriter, r *http.Request) {
+func (us *AccountService) LoginRoute(w http.ResponseWriter, r *http.Request) {
 	// TODO implement
 	// SET key
 	_, err := us.valkey.Set("key", "val")

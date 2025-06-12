@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/middleware"
+	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/account"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/computer"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/test"
-	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/user"
+
 	"github.com/valkey-io/valkey-glide/go/api"
 	"gorm.io/gorm"
 )
@@ -38,7 +39,7 @@ func (api *API) privateCredentialHandler(path string, handler http.HandlerFunc, 
 
 func (api *API) InitHandlers(mux *http.ServeMux) {
 	computerService := computer.NewComputerService(api.db)
-	userService := user.NewUserService(api.db, api.valkey)
+	userService := account.NewAccountService(api.db, api.valkey)
 
 	api.publicHandler("GET /api/v1/test", test.HelloRoute, mux)
 	api.publicHandler("GET /api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)

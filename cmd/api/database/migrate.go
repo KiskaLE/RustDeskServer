@@ -11,7 +11,7 @@ func MigrateDatabase(db *gorm.DB) {
 	// createDatabase()
 	// Migrate the schema
 	log.Println("Startin db migration")
-	db.AutoMigrate(Computers{}, Users{})
+	db.AutoMigrate(Computers{}, Accounts{})
 	log.Println("Migration done")
 
 }

@@ -23,7 +23,7 @@ type Computers struct {
 	LastConnection sql.NullTime
 }
 
-type Users struct {
+type Accounts struct {
 	gorm.Model
 	Email    string `gorm:"index:Email,unique"`
 	Password string
