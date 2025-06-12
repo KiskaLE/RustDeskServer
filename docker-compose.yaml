@@ -5,8 +5,14 @@ services:
     env_file:
       - ./.env
     restart: unless-stopped
+    depends_on:
+      - valkey
     volumes:
       - ./db:/app/db
       - ./certs:/app/certs
     ports:
       - "${PORT:-3000}:3000"
+  valkey:
+    image: valkey/valkey:8.1.2-alpine
+    container_name: valkey
+    restart: unless-stopped

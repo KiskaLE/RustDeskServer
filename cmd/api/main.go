@@ -2,14 +2,18 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
 	"github.com/joho/godotenv"
+	"github.com/valkey-io/valkey-glide/go/api"
+	valkeyAPI "github.com/valkey-io/valkey-glide/go/api"
 )
 
 // main initializes and starts the HTTP server. It loads environment variables,
@@ -29,6 +33,28 @@ func main() {
 		}
 	}
 
+	valkeyHost := os.Getenv("VALKEY_HOST")
+	valkeyPort, err := strconv.Atoi(os.Getenv("VALKEY_PORT"))
+	if err != nil {
+		valkeyPort = 6379
+	}
+
+	// init valkey
+	valkeyConfig := valkeyAPI.NewGlideClientConfiguration().WithAddress(&valkeyAPI.NodeAddress{Host: valkeyHost, Port: valkeyPort})
+
+	valkey, err := api.NewGlideClient(valkeyConfig)
+	if err != nil {
+		log.Fatalf("Error creating valkey client: %v", err)
+	}
+	defer valkey.Close()
+
+	// Test the connection
+	result, err := valkey.Ping()
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	fmt.Println(result)
+
 	db, err := database.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -41,9 +67,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	ctx := handler.NewAPI(db)
+	api := handler.NewAPI(db, valkey)
 
-	ctx.InitHandlers(mux)
+	api.InitHandlers(mux)
 
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {

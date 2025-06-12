@@ -6,6 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type Role string
+
+const (
+	AdminRole Role = "ADMIN"
+	ReadRole  Role = "READ_ONLY"
+)
+
 type Computers struct {
 	gorm.Model
 	Name           string `gorm:"unique"`
@@ -14,4 +21,11 @@ type Computers struct {
 	OS             string
 	OSVersion      string
 	LastConnection sql.NullTime
+}
+
+type Users struct {
+	gorm.Model
+	Email    string `gorm:"index:Email,unique"`
+	Password string
+	Role     Role
 }

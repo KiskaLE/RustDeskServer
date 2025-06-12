@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/KiskaLE/RustDeskServer/utils"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // AuthMiddleware checks if the user is authenticated
@@ -19,6 +21,32 @@ func ApiAuth(next http.Handler) http.Handler {
 
 		if token != user_token {
 			utils.WriteError(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func CredentialAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO implement
+		tokenString := r.Header.Get("Authorization")
+		// remove the "Bearer " prefix from the token
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+		if tokenString == "" {
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("token is missing"))
+			return
+		}
+
+		jwtKey := []byte(os.Getenv("SALT"))
+
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+			return jwtKey, nil
+		})
+
+		if err != nil || !token.Valid {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
