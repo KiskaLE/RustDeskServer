@@ -89,40 +89,64 @@ func (us *AccountService) LoginRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT token
-	expirationTime := time.Now().Add(30 * time.Minute)
-	claims := &middleware.Claims{
-		Email: payload.Email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	jwtKey := []byte(os.Getenv("SALT"))
-
-	tokenString, err := token.SignedString(jwtKey)
+	// generate tokens
+	tokenString, refreshToken, err := generateTokens(strconv.Itoa(int(account.ID)))
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
-	}
-
-	// generate refresh token
-	refreshToken, err := generateRefreshToken()
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	opts := options.SetOptions{
-		Expiry: &options.Expiry{
-			Count: 60 * 60 * 24,    // 24 hours
-			Type:  options.Seconds, // Or whatever the correct enum/type is
-		},
 	}
 
 	// save refresh token to valkey
-	_, err = us.valkey.SetWithOptions("refresh_token:"+refreshToken, strconv.Itoa(int(account.ID)), opts)
+	err = us.saveRefreshToken(refreshToken, account)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString, "refresh_token": refreshToken})
+	return
+}
+
+func (us *AccountService) RefreshTokenRoute(w http.ResponseWriter, r *http.Request) {
+	// TODO implement
+	var payload RefreshTokenPayload
+	err := utils.ParseJSON(r, &payload)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// get refresh token from valkey
+	oldRefreshToken, err := us.valkey.Get("refresh_token:" + payload.RefreshToken)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid refresh token"))
+		return
+	}
+
+	// invalidate refresh token
+	_, err = us.valkey.Del([]string{"refresh_token:" + payload.RefreshToken})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// find account
+	var account database.Accounts
+	err = us.db.First(&account, "id = ?", oldRefreshToken.Value()).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid refresh token"))
+		return
+	}
+
+	// generate tokens
+	tokenString, refreshToken, err := generateTokens(strconv.Itoa(int(account.ID)))
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// save refresh token to valkey
+	err = us.saveRefreshToken(refreshToken, account)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -139,4 +163,48 @@ func generateRefreshToken() (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func (us *AccountService) saveRefreshToken(refreshToken string, account database.Accounts) error {
+	opts := options.SetOptions{
+		Expiry: &options.Expiry{
+			Count: 60 * 60 * 24, // 24 hours
+			Type:  options.Seconds,
+		},
+	}
+
+	// save refresh token to valkey
+	_, err := us.valkey.SetWithOptions("refresh_token:"+refreshToken, strconv.Itoa(int(account.ID)), opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func generateTokens(id string) (tokenString string, refreshToken string, err error) {
+	// Generate JWT token
+	expirationTime := time.Now().Add(30 * time.Minute)
+	claims := &middleware.Claims{
+		ID: id,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwtKey := []byte(os.Getenv("SALT"))
+
+	tokenString, err = token.SignedString(jwtKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	// generate refresh token
+	refreshToken, err = generateRefreshToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	return tokenString, refreshToken, nil
 }
