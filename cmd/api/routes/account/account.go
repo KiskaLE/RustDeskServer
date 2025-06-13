@@ -13,6 +13,7 @@ import (
 	"github.com/KiskaLE/RustDeskServer/cmd/api/middleware"
 	"github.com/KiskaLE/RustDeskServer/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/valkey-io/valkey-glide/go/api"
 	"github.com/valkey-io/valkey-glide/go/api/options"
 	"golang.org/x/crypto/bcrypt"
@@ -107,6 +108,33 @@ func (us *AccountService) LoginRoute(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (us *AccountService) LogoutRoute(w http.ResponseWriter, r *http.Request) {
+	// TODO implement
+	// invalidate refresh token
+	_, err := us.valkey.Del([]string{"refresh_token:" + r.Header.Get("refresh_token")})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// blacklist jwt token
+	claimsValue := r.Context().Value("claims")
+
+	keyOptions := options.SetOptions{
+		Expiry: &options.Expiry{
+			Count: uint64((claimsValue.(*middleware.Claims).ExpiresAt.Unix()) - time.Now().Unix()),
+			Type:  options.Seconds,
+		},
+	}
+	_, err = us.valkey.SetWithOptions("jwt_blacklist:"+claimsValue.(*middleware.Claims).Jti, "true", keyOptions)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "logout successful"})
+}
+
 func (us *AccountService) RefreshTokenRoute(w http.ResponseWriter, r *http.Request) {
 	// TODO implement
 	var payload RefreshTokenPayload
@@ -186,7 +214,8 @@ func generateTokens(id string) (tokenString string, refreshToken string, err err
 	// Generate JWT token
 	expirationTime := time.Now().Add(30 * time.Minute)
 	claims := &middleware.Claims{
-		ID: id,
+		Jti: uuid.New().String(),
+		ID:  id,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

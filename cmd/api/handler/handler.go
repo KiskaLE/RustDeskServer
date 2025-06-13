@@ -34,7 +34,8 @@ func (api *API) privateHandler(path string, handler http.HandlerFunc, mux *http.
 }
 
 func (api *API) privateCredentialHandler(path string, handler http.HandlerFunc, mux *http.ServeMux) {
-	mux.Handle(path, middleware.CredentialAuth(middleware.Logging(http.HandlerFunc(handler))))
+	middlewareService := middleware.NewMiddlewareService(api.valkey)
+	mux.Handle(path, middlewareService.CredentialAuth(middleware.Logging(http.HandlerFunc(handler))))
 }
 
 func (api *API) InitHandlers(mux *http.ServeMux) {
@@ -42,13 +43,17 @@ func (api *API) InitHandlers(mux *http.ServeMux) {
 	accountService := account.NewAccountService(api.db, api.valkey)
 
 	api.publicHandler("GET /api/v1/test", test.HelloRoute, mux)
-	api.publicHandler("GET /api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)
+
+	// account
 	api.publicHandler("POST /api/v1/account/login", accountService.LoginRoute, mux)
 	if os.Getenv("ALLOW_REGISTER") == "true" {
 		api.publicHandler("POST /api/v1/account/register", accountService.RegisterRoute, mux)
 	}
 	api.publicHandler("POST /api/v1/account/refresh-token", accountService.RefreshTokenRoute, mux)
+	api.privateCredentialHandler("POST /api/v1/account/logout", accountService.LogoutRoute, mux)
 
+	// computer
+	api.publicHandler("GET /api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)
 	api.privateHandler("POST /api/v1/computer/refresh", computerService.RefreshComputerRoute, mux)
 
 }

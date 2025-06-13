@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -10,7 +11,16 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/valkey-io/valkey-glide/go/api"
 )
+
+type MiddlewareService struct {
+	valkey api.GlideClientCommands
+}
+
+func NewMiddlewareService(valkey api.GlideClientCommands) *MiddlewareService {
+	return &MiddlewareService{valkey: valkey}
+}
 
 // AuthMiddleware checks if the user is authenticated
 func ApiAuth(next http.Handler) http.Handler {
@@ -27,7 +37,7 @@ func ApiAuth(next http.Handler) http.Handler {
 	})
 }
 
-func CredentialAuth(next http.Handler) http.Handler {
+func (ms *MiddlewareService) CredentialAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO implement
 		tokenString := r.Header.Get("Authorization")
@@ -49,7 +59,21 @@ func CredentialAuth(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+
+		// check jwt blacklist
+		blacklisted, err := ms.valkey.Get("jwt_blacklist:" + claims.Jti)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if !blacklisted.IsNil() {
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("token is blacklisted"))
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "claims", claims)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
