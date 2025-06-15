@@ -75,6 +75,10 @@ func main() {
 	webHandler := webhandler.NewUI(db, valkey)
 	webHandler.InitHandlers(mux)
 
+	// Serve static files
+	fileServer := http.FileServer(http.Dir(os.Getenv("STATIC_DIR")))
+	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {
 		certFilePath := os.Getenv("CERT_FILE_PATH")
