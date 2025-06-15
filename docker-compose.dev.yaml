@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./.env
+    ports:
+      - "${PORT}:3000"
+    volumes:
+      - "./:/app/"
+      - "./bin/static:/app/static"
+    command: air
+  valkey:
+    image: valkey/valkey:8.1.2-alpine
+    container_name: valkey
+    restart: unless-stopped

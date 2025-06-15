@@ -7,3 +7,4 @@ certs/*
 .vscode
 node_modules
 styles.css
+tmp/*

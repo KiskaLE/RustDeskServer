@@ -1,46 +1,20 @@
 root = "."
-testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
-  bin = "./bin/main"
   cmd = "make build"
-  delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
-  exclude_file = []
-  exclude_regex = ["_test.go"]
-  exclude_unchanged = false
-  follow_symlink = false
+  delay = 5000
+  bin = "bin/api"
   full_bin = ""
-  include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html"]
-  include_file = []
-  kill_delay = "0s"
-  log = "build-errors.log"
-  poll = true
-  poll_interval = 5000
-  post_cmd = []
-  pre_cmd = []
-  rerun = false
-  rerun_delay = 500
-  send_interrupt = false
-  stop_on_error = false
+  include_ext = ["go", "tmpl", "templ", "html"]
+  exclude_dir = ["bin", "node_modules", "tmp"]
+  exclude_regex = ["_templ.go"]
 
 [color]
-  app = ""
-  build = "yellow"
-  main = "magenta"
-  runner = "green"
-  watcher = "cyan"
+  enabled = true
 
 [log]
-  main_only = false
-  time = false
-
-[misc]
-  clean_on_exit = false
+  time = true
 
 [screen]
   clear_on_rebuild = false
-  keep_scroll = true
