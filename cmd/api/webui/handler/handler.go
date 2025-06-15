@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/routes/account"
+	webmw "github.com/KiskaLE/RustDeskServer/cmd/api/webui/middleware"
 	"github.com/valkey-io/valkey-glide/go/api"
 	"gorm.io/gorm"
 )
@@ -23,4 +24,10 @@ func (ui *UI) InitHandlers(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /login", authWebHandler.HandleLoginPage)
 	mux.HandleFunc("POST /login", authWebHandler.HandleLogin)
+
+	mux.HandleFunc("POST /web/refresh-token", authWebHandler.HandleRefreshToken)
+
+	sessionMW := webmw.New(ui.valkey)
+	mux.Handle("GET /dashboard",
+		sessionMW.VerifySession(http.HandlerFunc(HandleDashboardPage)))
 }
