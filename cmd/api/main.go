@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
+	webhandler "github.com/KiskaLE/RustDeskServer/cmd/api/webui/handler"
 	"github.com/joho/godotenv"
 	"github.com/valkey-io/valkey-glide/go/api"
 	valkeyAPI "github.com/valkey-io/valkey-glide/go/api"
@@ -67,9 +68,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	api := handler.NewAPI(db, valkey)
+	apiHandler := handler.NewAPI(db, valkey)
 
-	api.InitHandlers(mux)
+	apiHandler.InitHandlers(mux)
+
+	webHandler := webhandler.NewUI(db, valkey)
+	webHandler.InitHandlers(mux)
 
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {

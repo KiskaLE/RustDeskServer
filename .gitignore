@@ -3,3 +3,4 @@ bin/*
 db/*
 *.devdbrc
 certs/*
+*_templ.go

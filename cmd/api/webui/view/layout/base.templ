@@ -1,0 +1,21 @@
+// cmd/api/web/view/layout/base.templ
+package layout
+
+templ Base(title string) {
+    <!DOCTYPE html>
+    <html lang="cs">
+        <head>
+            <meta charset="UTF-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>{ title } | RustDesk Admin</title>
+            <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lBKVfgRKC4ijVy/LifhgniaLZjudJyGuc4Rj4CMcDAKCQmqAlCRZkrLYDMWm" crossorigin="anonymous"></script>
+            <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+            <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-gray-100">
+            <main class="container mx-auto mt-10">
+                { children... }
+            </main>
+        </body>
+    </html>
+}
