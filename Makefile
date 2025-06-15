@@ -5,29 +5,13 @@ all: build test
 
 build:
 	@echo "Building..."
-	
-	
-	@CGO_ENABLED=1 GOOS=linux go build -o bin/main cmd/api/main.go
-
+	@go tool templ generate
+	@npx @tailwindcss/cli -i cmd/api/webui/view/styles/tailwind.css -o bin/static/styles/styles.css
+	@CGO_ENABLED=1 GOOS=linux go build -ldflags="-X 'main.runningInDocker=false'" -o ./bin/api ./cmd/api
 
 # Run the application
-run:
+dev:
+	@echo "Starting development server..."
+	@go tool templ generate --watch &
+	@npx @tailwindcss/cli -i cmd/api/webui/view/styles/tailwind.css -o cmd/api/webui/view/styles/styles.css --watch &
 	@go run cmd/api/main.go
-# Live Reload
-watch:
-	@if command -v air > /dev/null; then \
-            air; \
-            echo "Watching...";\
-        else \
-            read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
-            if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-                go install github.com/air-verse/air@latest; \
-                air; \
-                echo "Watching...";\
-            else \
-                echo "You chose not to install air. Exiting..."; \
-                exit 1; \
-            fi; \
-        fi
-
-.PHONY: all build run test clean watch

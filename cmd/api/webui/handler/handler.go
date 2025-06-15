@@ -21,6 +21,8 @@ func (ui *UI) InitHandlers(mux *http.ServeMux) {
 	accountService := account.NewAccountService(ui.db, ui.valkey)
 	authWebHandler := NewAuthHandler(accountService)
 
+	http.Handle("/static", http.FileServer(http.Dir("bin/static")))
+
 	mux.HandleFunc("GET /login", authWebHandler.HandleLoginPage)
 	mux.HandleFunc("POST /login", authWebHandler.HandleLogin)
 }

@@ -16,3 +16,5 @@ services:
     image: valkey/valkey:8.1.2-alpine
     container_name: valkey
     restart: unless-stopped
+    ports:
+      - "6379:6379"

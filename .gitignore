@@ -1,6 +1,9 @@
-bin/*
+bin
 *.env
 db/*
 *.devdbrc
 certs/*
 *_templ.go
+.vscode
+node_modules
+styles.css

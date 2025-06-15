@@ -1,6 +1,9 @@
 certs/*
-db/*
+db
 README.MD
 *.env.example
 *.env
 .gitignore
+
+styles.css
+*_templ.go
