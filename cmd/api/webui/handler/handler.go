@@ -25,9 +25,7 @@ func (ui *UI) InitHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("GET /login", authWebHandler.HandleLoginPage)
 	mux.HandleFunc("POST /login", authWebHandler.HandleLogin)
 
-	mux.HandleFunc("POST /web/refresh-token", authWebHandler.HandleRefreshToken)
-
-	sessionMW := webmw.New(ui.valkey)
+	sessionMW := webmw.New(ui.valkey, accountService)
 	mux.Handle("GET /dashboard",
 		sessionMW.VerifySession(http.HandlerFunc(HandleDashboardPage)))
 	mux.Handle("GET /",

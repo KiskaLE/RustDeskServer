@@ -11,53 +11,6 @@ templ Base(title string) {
 			<script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 			<link rel="stylesheet" href="/static/styles/styles.css"/>
-			<script>
-                let isRefreshing = false;
-                let failedQueue = [];
-
-                const processQueue = () => {
-                failedQueue.forEach((retry) => retry());
-                failedQueue = [];
-                };
-
-                document.body.addEventListener("htmx:responseError", (evt) => {
-                const status = evt.detail.xhr.status; // <-- detail, ne dtail
-                if (status !== 401 && status !== 403) return; // 403 máte při blacklistu
-
-                evt.preventDefault(); // zabraňíme defaultnímu chování HTMX
-
-                const retryOriginal = () => {
-                    htmx.ajax(
-                    evt.detail.requestConfig.verb.toUpperCase(),
-                    evt.detail.requestConfig.path,
-                    {
-                        target: evt.detail.target,
-                        swap: evt.detail.requestConfig.swapStyle,
-                    }
-                    );
-                };
-
-                if (isRefreshing) {
-                    // refresh už probíhá → zařadíme se do fronty
-                    failedQueue.push(retryOriginal);
-                    return;
-                }
-                isRefreshing = true;
-
-                fetch("/web/refresh-token", { method: "POST" })
-                    .then((res) => {
-                    if (res.ok) {
-                        retryOriginal(); // cookies jsou přepsané, zkusíme znovu
-                        processQueue(); // a všechny, co čekaly
-                        return;
-                    }
-                    // refresh neprošel => odhlásíme
-                    window.location.href = "/login";
-                    })
-                    .catch(() => (window.location.href = "/login"))
-                    .finally(() => (isRefreshing = false));
-                });
-            </script>
 		</head>
 		<body class="bg-gray-100">
 			<main class="container mx-auto mt-10">
