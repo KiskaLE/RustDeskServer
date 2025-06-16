@@ -77,7 +77,7 @@ func main() {
 
 	// Serve static files
 	fileServer := http.FileServer(http.Dir(os.Getenv("STATIC_DIR")))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", fileServer))
 
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {

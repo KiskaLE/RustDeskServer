@@ -2,6 +2,7 @@ package webmw
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -24,8 +25,13 @@ func New(valkey api.GlideClientCommands) SessionMiddleware {
 // VerifySession kontroluje, zda je v cookie platný JWT a není na blacklistu.
 func (sm SessionMiddleware) VerifySession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isHtmx := r.Header.Get("HX-Request") == "true"
 		c, err := r.Cookie("auth_token")
 		if err != nil || c.Value == "" {
+			if isHtmx {
+				w.WriteHeader(http.StatusUnauthorized) // 401
+				return
+			}
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -37,6 +43,10 @@ func (sm SessionMiddleware) VerifySession(next http.Handler) http.Handler {
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
 			return jwtKey, nil
 		})
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("token_expired"))
+			return
+		}
 		if err != nil || !token.Valid {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return

@@ -8,80 +8,54 @@ templ Base(title string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } | RustDesk Admin</title>
-			<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lBKVfgRKC4ijVy/LifhgniaLZjudJyGuc4Rj4CMcDAKCQmqAlCRZkrLYDMWm" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 			<link rel="stylesheet" href="/static/styles/styles.css"/>
 			<script>
-                // A flag to prevent multiple refresh calls from firing at once
                 let isRefreshing = false;
-                // A queue to hold requests that failed while a refresh was in progress
                 let failedQueue = [];
-                
+
                 const processQueue = () => {
-                    failedQueue.forEach(trigger => trigger());
-                    failedQueue = [];
+                failedQueue.forEach((retry) => retry());
+                failedQueue = [];
                 };
 
-                document.body.addEventListener('htmx:responseError', function(evt) {
-                    // Check if the error is a 401 Unauthorized
-                    if (evt.detail.xhr.status === 401) {
+                document.body.addEventListener("htmx:responseError", (evt) => {
+                const status = evt.detail.xhr.status; // <-- detail, ne dtail
+                if (status !== 401 && status !== 403) return; // 403 máte při blacklistu
 
-                        // Prevent HTMX's default error handling
-                        evt.preventDefault();
-                        
-                        const originalRequestTrigger = () => {
-                            // Find the element that triggered the original request
-                            const originalElement = evt.detail.elt;
-                            // Re-trigger the request using htmx.trigger
-                            htmx.trigger(originalElement, "htmx:trigger-retry", {}); 
-                            // We listen for a custom event so we don't get into a loop
-                            // The original hx-trigger needs to be updated.
-                            // A simpler way is to just re-issue the request.
-                            htmx.ajax(
-                                evt.detail.requestConfig.verb.toUpperCase(),
-                                evt.detail.requestConfig.path,
-                                { 
-                                    target: evt.detail.target,
-                                    swap: evt.detail.requestConfig.swapStyle
-                                }
-                            );
-                        }
+                evt.preventDefault(); // zabraňíme defaultnímu chování HTMX
 
-                        if (isRefreshing) {
-                            // If a refresh is already happening, queue this request to be retried later
-                            failedQueue.push(originalRequestTrigger);
-                            return;
-                        }
-
-                        isRefreshing = true;
-
-                        console.log("Token expired. Attempting refresh...");
-
-                        // Make a request to our new refresh endpoint
-                        fetch('/web/refresh-token', {
-                            method: 'POST',
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                console.log("Token refreshed successfully.");
-                                // The cookies are now updated. Retry the original request.
-                                originalRequestTrigger();
-                                // Process any other requests that failed while we were refreshing.
-                                processQueue();
-                            } else {
-                                // Refresh failed. The session is truly over.
-                                console.error("Session expired. Redirecting to login.");
-                                window.location.href = '/login';
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Refresh request failed:", error);
-                            window.location.href = '/login';
-                        })
-                        .finally(() => {
-                            isRefreshing = false;
-                        });
+                const retryOriginal = () => {
+                    htmx.ajax(
+                    evt.detail.requestConfig.verb.toUpperCase(),
+                    evt.detail.requestConfig.path,
+                    {
+                        target: evt.detail.target,
+                        swap: evt.detail.requestConfig.swapStyle,
                     }
+                    );
+                };
+
+                if (isRefreshing) {
+                    // refresh už probíhá → zařadíme se do fronty
+                    failedQueue.push(retryOriginal);
+                    return;
+                }
+                isRefreshing = true;
+
+                fetch("/web/refresh-token", { method: "POST" })
+                    .then((res) => {
+                    if (res.ok) {
+                        retryOriginal(); // cookies jsou přepsané, zkusíme znovu
+                        processQueue(); // a všechny, co čekaly
+                        return;
+                    }
+                    // refresh neprošel => odhlásíme
+                    window.location.href = "/login";
+                    })
+                    .catch(() => (window.location.href = "/login"))
+                    .finally(() => (isRefreshing = false));
                 });
             </script>
 		</head>

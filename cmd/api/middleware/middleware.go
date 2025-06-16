@@ -55,6 +55,12 @@ func (ms *MiddlewareService) CredentialAuth(next http.Handler) http.Handler {
 			return jwtKey, nil
 		})
 
+		// check if token is expired
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("token_expired"))
+			return
+		}
+
 		if err != nil || !token.Valid {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

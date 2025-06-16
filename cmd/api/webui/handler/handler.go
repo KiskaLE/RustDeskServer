@@ -30,4 +30,6 @@ func (ui *UI) InitHandlers(mux *http.ServeMux) {
 	sessionMW := webmw.New(ui.valkey)
 	mux.Handle("GET /dashboard",
 		sessionMW.VerifySession(http.HandlerFunc(HandleDashboardPage)))
+	mux.Handle("GET /",
+		sessionMW.VerifySession(http.HandlerFunc(HandleRoot)))
 }
