@@ -212,7 +212,7 @@ func (us *AccountService) saveRefreshToken(refreshToken string, account database
 
 func generateTokens(id string) (tokenString string, refreshToken string, err error) {
 	// Generate JWT token
-	expirationTime := time.Now().Add(1 * time.Minute)
+	expirationTime := time.Now().Add(30 * time.Minute)
 	claims := &middleware.Claims{
 		Jti: uuid.New().String(),
 		ID:  id,
