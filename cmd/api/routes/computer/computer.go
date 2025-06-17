@@ -85,3 +85,14 @@ func (cs *ComputerService) GetComputerRustDeskIDRoute(w http.ResponseWriter, r *
 	utils.WriteJSON(w, http.StatusOK, computer.RustDeskID)
 	return
 }
+
+func (cs *ComputerService) GetComputersRoute(w http.ResponseWriter, r *http.Request) {
+	computers := []database.Computers{}
+	err := cs.db.Find(&computers).Error
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, GetComputersResponse{Computers: computers})
+}

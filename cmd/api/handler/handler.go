@@ -55,5 +55,6 @@ func (api *API) InitHandlers(mux *http.ServeMux) {
 	// computer
 	api.publicHandler("GET /api/v1/computer/{computerName}/get-rustdesk-id", computerService.GetComputerRustDeskIDRoute, mux)
 	api.privateHandler("POST /api/v1/computer/refresh", computerService.RefreshComputerRoute, mux)
+	api.privateHandler("GET /api/v1/computers", computerService.GetComputersRoute, mux)
 
 }
