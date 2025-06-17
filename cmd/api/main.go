@@ -11,10 +11,8 @@ import (
 
 	"github.com/KiskaLE/RustDeskServer/cmd/api/database"
 	"github.com/KiskaLE/RustDeskServer/cmd/api/handler"
-	webhandler "github.com/KiskaLE/RustDeskServer/cmd/api/webui/handler"
 	"github.com/joho/godotenv"
 	"github.com/valkey-io/valkey-glide/go/api"
-	valkeyAPI "github.com/valkey-io/valkey-glide/go/api"
 )
 
 // main initializes and starts the HTTP server. It loads environment variables,
@@ -41,7 +39,7 @@ func main() {
 	}
 
 	// init valkey
-	valkeyConfig := valkeyAPI.NewGlideClientConfiguration().WithAddress(&valkeyAPI.NodeAddress{Host: valkeyHost, Port: valkeyPort})
+	valkeyConfig := api.NewGlideClientConfiguration().WithAddress(&api.NodeAddress{Host: valkeyHost, Port: valkeyPort})
 
 	valkey, err := api.NewGlideClient(valkeyConfig)
 	if err != nil {
@@ -71,13 +69,6 @@ func main() {
 	apiHandler := handler.NewAPI(db, valkey)
 
 	apiHandler.InitHandlers(mux)
-
-	webHandler := webhandler.NewUI(db, valkey)
-	webHandler.InitHandlers(mux)
-
-	// Serve static files
-	fileServer := http.FileServer(http.Dir(os.Getenv("STATIC_DIR")))
-	mux.Handle("GET /static/", http.StripPrefix("/static/", fileServer))
 
 	isHttps := os.Getenv("HTTPS")
 	if isHttps == "true" {
