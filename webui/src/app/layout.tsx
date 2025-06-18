@@ -4,6 +4,9 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { HydrateClient } from "~/trpc/server";
+import { auth } from "~/server/auth";
+import { redirect, RedirectType } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -16,13 +19,24 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
+
+  if (!session?.user) {
+    // redirect to login
+    return redirect("/api/auth/signin", RedirectType.replace);
+  }
+
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <HydrateClient>
+            <main>{children}</main>
+          </HydrateClient>
+        </TRPCReactProvider>
       </body>
     </html>
   );

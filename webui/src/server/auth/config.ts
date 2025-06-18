@@ -1,5 +1,7 @@
+import axios from "axios";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { env } from "~/env";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -16,10 +18,10 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+  interface User {
+    apiToken: string;
+    refreshToken: string;
+  }
 }
 
 /**
@@ -29,7 +31,38 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider,
+    CredentialsProvider({
+      // The name to display on the sign in form (e.g. "Sign in with...")
+      name: "Credentials",
+      // `credentials` is used to generate a form on the sign in page.
+      // You can specify which fields should be submitted, by adding keys to the `credentials` object.
+      // e.g. domain, username, password, 2FA token, etc.
+      // You can pass any HTML attribute to the <input> tag through the object.
+      credentials: {
+        email: { label: "Email", type: "text", placeholder: "jsmith" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const apiUrl = `${env.NEXT_PUBLIC_API_URL}/api/v1/account/login`;
+        try {
+          const res = await axios.post(apiUrl, {
+            email: credentials.email,
+            password: credentials.password,
+          });
+
+          if (res.status === 200) {
+            return {
+              id: credentials.email as string,
+              apiToken: res.data.token,
+              refreshToken: res.data.refresh_token,
+            };
+          }
+          return null;
+        } catch (error) {
+          return null;
+        }
+      },
+    }),
     /**
      * ...add more providers here.
      *
@@ -40,12 +73,25 @@ export const authConfig = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24, // 24 hours
+  },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.apiToken = user.apiToken;
+        token.refreshToken = user.refreshToken;
+      }
+      return token;
+    },
     session: ({ session, token }) => ({
       ...session,
       user: {
         ...session.user,
         id: token.sub,
+        apiToken: token.apiToken as string,
+        refreshToken: token.refreshToken as string,
       },
     }),
   },
