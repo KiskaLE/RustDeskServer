@@ -112,7 +112,7 @@ export const authConfig = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24, // 1 hour
+    maxAge: 60 * 60, // 1 hour
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -160,5 +160,9 @@ export const authConfig = {
         },
       };
     },
+  },
+  pages: {
+    signIn: "/auth/signin", // Optional: custom sign-in page
+    error: "/auth/error", // Optional: custom error page
   },
 } satisfies NextAuthConfig;

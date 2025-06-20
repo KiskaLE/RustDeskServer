@@ -79,32 +79,32 @@ func (us *AccountService) LoginRoute(w http.ResponseWriter, r *http.Request) {
 	var account database.Accounts
 	err = us.db.First(&account, "email = ?", payload.Email).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.WriteError(w, http.StatusUnauthorized, errors.New("Email or password is incorrect"))
+		utils.WriteError(w, http.StatusUnauthorized, errors.New("email or password is incorrect"))
 		return
 	}
 
 	// check if password is correct
 	err = bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(payload.Password))
 	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, errors.New("Email or password is incorrect"))
+		utils.WriteError(w, http.StatusUnauthorized, errors.New("email or password is incorrect"))
 		return
 	}
 
 	// generate tokens
-	tokenString, refreshToken, err := generateTokens(strconv.Itoa(int(account.ID)))
+	tokenString, refreshToken, tokenExp, err := generateTokens(strconv.Itoa(int(account.ID)))
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	// save refresh token to valkey
-	err = us.saveRefreshToken(refreshToken, account)
+	refreshTokenExp, err := us.saveRefreshToken(refreshToken, account)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString, "refresh_token": refreshToken})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString, "refresh_token": refreshToken, "token_exp": tokenExp.Format(time.RFC3339), "refresh_token_exp": refreshTokenExp.Format(time.RFC3339)})
 	return
 }
 
@@ -136,7 +136,6 @@ func (us *AccountService) LogoutRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func (us *AccountService) RefreshTokenRoute(w http.ResponseWriter, r *http.Request) {
-	// TODO implement
 	var payload RefreshTokenPayload
 	err := utils.ParseJSON(r, &payload)
 	if err != nil {
@@ -146,15 +145,8 @@ func (us *AccountService) RefreshTokenRoute(w http.ResponseWriter, r *http.Reque
 
 	// get refresh token from valkey
 	oldRefreshToken, err := us.valkey.Get("refresh_token:" + payload.RefreshToken)
-	if err != nil {
+	if err != nil || oldRefreshToken.Value() == "" {
 		utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid refresh token"))
-		return
-	}
-
-	// invalidate refresh token
-	_, err = us.valkey.Del([]string{"refresh_token:" + payload.RefreshToken})
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -166,22 +158,28 @@ func (us *AccountService) RefreshTokenRoute(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// invalidate refresh token
+	_, err = us.valkey.Del([]string{"refresh_token:" + payload.RefreshToken})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
 	// generate tokens
-	tokenString, refreshToken, err := generateTokens(strconv.Itoa(int(account.ID)))
+	tokenString, refreshToken, tokenExp, err := generateTokens(strconv.Itoa(int(account.ID)))
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	// save refresh token to valkey
-	err = us.saveRefreshToken(refreshToken, account)
+	refreshTokenExp, err := us.saveRefreshToken(refreshToken, account)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString, "refresh_token": refreshToken})
-	return
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString, "refresh_token": refreshToken, "token_exp": tokenExp.Format(time.RFC3339), "refresh_token_exp": refreshTokenExp.Format(time.RFC3339)})
 }
 
 func generateRefreshToken() (string, error) {
@@ -193,7 +191,8 @@ func generateRefreshToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-func (us *AccountService) saveRefreshToken(refreshToken string, account database.Accounts) error {
+func (us *AccountService) saveRefreshToken(refreshToken string, account database.Accounts) (refreshTokenExp time.Time, err error) {
+	refreshTokenExp = time.Now().Add(24 * time.Hour)
 	opts := options.SetOptions{
 		Expiry: &options.Expiry{
 			Count: 60 * 60 * 24, // 24 hours
@@ -202,17 +201,17 @@ func (us *AccountService) saveRefreshToken(refreshToken string, account database
 	}
 
 	// save refresh token to valkey
-	_, err := us.valkey.SetWithOptions("refresh_token:"+refreshToken, strconv.Itoa(int(account.ID)), opts)
+	_, err = us.valkey.SetWithOptions("refresh_token:"+refreshToken, strconv.Itoa(int(account.ID)), opts)
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
-	return nil
+	return refreshTokenExp, nil
 }
 
-func generateTokens(id string) (tokenString string, refreshToken string, err error) {
+func generateTokens(id string) (tokenString string, refreshToken string, tokenExp time.Time, err error) {
 	// Generate JWT token
-	expirationTime := time.Now().Add(30 * time.Minute)
+	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &middleware.Claims{
 		Jti: uuid.New().String(),
 		ID:  id,
@@ -226,14 +225,14 @@ func generateTokens(id string) (tokenString string, refreshToken string, err err
 
 	tokenString, err = token.SignedString(jwtKey)
 	if err != nil {
-		return "", "", err
+		return "", "", time.Time{}, err
 	}
 
 	// generate refresh token
 	refreshToken, err = generateRefreshToken()
 	if err != nil {
-		return "", "", err
+		return "", "", time.Time{}, err
 	}
 
-	return tokenString, refreshToken, nil
+	return tokenString, refreshToken, expirationTime, nil
 }

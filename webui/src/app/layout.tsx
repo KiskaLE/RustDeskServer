@@ -7,6 +7,8 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { HydrateClient } from "~/trpc/server";
 import { auth } from "~/server/auth";
 import { redirect, RedirectType } from "next/navigation";
+import Session from "~/client/actions/session";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -25,7 +27,6 @@ export default async function RootLayout({
   const session = await auth();
 
   if (!session?.user) {
-    // redirect to login
     return redirect("/api/auth/signin", RedirectType.replace);
   }
 
@@ -33,9 +34,12 @@ export default async function RootLayout({
     <html lang="en" className={`${geist.variable}`}>
       <body>
         <TRPCReactProvider>
-          <HydrateClient>
-            <main>{children}</main>
-          </HydrateClient>
+          <SessionProvider session={session}>
+            <HydrateClient>
+              <Session />
+              <main>{children}</main>
+            </HydrateClient>
+          </SessionProvider>
         </TRPCReactProvider>
       </body>
     </html>
